@@ -5,7 +5,7 @@ use Carp;
 
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '0.11';
+$VERSION = '0.12';
  
 require Exporter;
 
@@ -28,6 +28,7 @@ require Exporter;
     assert_keys
     assert_is_string
     run_tests
+    run_tests_as_script
 );
 
 sub assert($)       { confess "Assertion failed.\n$@" if !$_[0] ; undef $@ }
@@ -188,9 +189,190 @@ sub run_tests {
     for my $pkg (@pkgs) { push @$all_tests, @{ _list_tests $pkg }; }
 
      my $failure_messages = {};
-      _execute_tests $all_tests, $failure_messages, 1;
+     _execute_tests $all_tests, $failure_messages, 1;
      _print_failure_messages $all_tests, $failure_messages;
 }
+
+sub run_tests_as_script {
+    my @pkgs = map { $_ . "::" } ( 'main' , @_);
+    my $all_tests = [];
+    for my $pkg (@pkgs) { push @$all_tests, @{ _list_tests $pkg }; }
+
+     my $failure_messages = {};
+     _execute_tests $all_tests, $failure_messages, 0;
+
+    print "1..", scalar @$all_tests, "\n";
+    for (my $i = 0 ; $i < @$all_tests ; ++$i) {
+        my $test = $all_tests->[$i];
+        print "not " 
+            if exists $failure_messages->{$test};
+        print "ok ", 1 + $i;
+        print "\n", join "\n" => 
+            map { "# " . $_ ; } 
+            split /\n/, $test . ": " . $failure_messages->{$test} 
+                if exists $failure_messages->{$test};
+        print "\n";
+    }
+}
+
+
+#-----------------------------------------------------------------
+# TESTS BEGIN
+#-----------------------------------------------------------------
+
+sub test_assert_true() {
+    eval { assert_true 1 } ; assert_passed ;
+    eval { assert_true 0 } ; assert_failed ;
+}
+
+sub test_assert_false() {
+    eval { assert_false 1 } ; assert_failed ;
+    eval { assert_false 0 } ; assert_passed ;
+}
+
+sub test_assert_some() {
+    eval { assert_some 1 } ; assert_passed ;
+    eval { assert_some 0 } ; assert_failed ;
+}
+
+sub test_assert_none() {
+    eval { assert_none 1 } ; assert_failed ;
+    eval { assert_none 0 } ; assert_passed ;
+}
+
+sub test_assert_equals() {
+    eval { assert_equals 'a', 'a' } ; assert_passed ;
+    eval { assert_equals 'a', 'b' } ; assert_failed ;
+}
+
+sub test_assert_equals_array() {
+    eval { Test::Extreme::assert_equals_array [ 'a', 'b' ], ['a', 'b'] } ; assert_passed ;
+    eval { Test::Extreme::assert_equals_array [ 'a', 'b' ], ['b', 'a'] } ; assert_failed ;
+
+    eval { Test::Extreme::assert_equals_array [ 'a' ], ['a', 'a'] } ; assert_failed ;
+    eval { Test::Extreme::assert_equals_array [ 'a', 'b' ], ['a'] } ; assert_failed ;
+
+    eval { Test::Extreme::assert_equals_array 'a', [ 'a' ] } ; assert_failed ;
+    eval { Test::Extreme::assert_equals_array [ 'a' ], 'a' } ; assert_failed ;
+}
+
+sub test_assert_equals_hash() {
+    eval { Test::Extreme::assert_equals_hash { k1=>'v1', k2=>'v2' }, { k1=>'v1', k2=>'v2' } } ; assert_passed ;
+    eval { Test::Extreme::assert_equals_hash { k1=>'v1', k2=>'v2' }, { k1=>'v1', k2=>'v3' } } ; assert_failed ;
+
+    eval { Test::Extreme::assert_equals_hash { k1=>'v1', k2=>'v2' }, { k1=>'v1' } } ; assert_failed ;
+
+    eval { Test::Extreme::assert_equals_hash { k1=>'v1', k2=>'v2' }, ['a'] } ; assert_failed ;
+    eval { Test::Extreme::assert_equals_hash { k1=>'v1', k2=>'v2' },  'a'  } ; assert_failed ;
+}
+
+sub test_assert_equals_polymorphic() {
+    eval { assert_equals 'a', 'a' } ; assert_passed ;
+
+    eval { assert_equals [ 'a', 'b' ], ['a', 'b'] } ; assert_passed ;
+    eval { assert_equals [ 'a', 'b' ], ['b', 'a'] } ; assert_failed ;
+
+    eval { assert_equals { k1 => 'v1', k2 => 'v2' }, { k1 => 'v1', k2 => 'v2' } } ; assert_passed ;
+    eval { assert_equals { k1 => 'v1', k2 => 'v2' }, { k1 => 'v1', k2 => 'v3' } } ; assert_failed ;
+}
+
+sub test_assert_subset() {
+    eval { assert_subset [ 'a' ], ['a', 'b'] } ; assert_passed ;
+    eval { assert_subset ['a', 'b'], ['a', 'b', 'c'] } ; assert_passed;
+    eval { assert_subset['a', 'b'], ['a', 'b'] } ; assert_passed;
+
+    eval { assert_subset [ 'c' ], ['a', 'b'] } ; assert_failed ;
+    eval { assert_subset [ 'a', 'c' ], ['a', 'b', 'd'] } ; assert_failed ;
+}
+
+sub test_assert_contains {
+    eval { assert_contains 'a', ['a', 'b'] } ; assert_passed ;
+    eval { assert_contains 'b', ['a', 'b'] } ; assert_passed ;
+    eval { assert_contains 'c', ['a', 'b'] } ; assert_failed ;
+    eval { assert_contains  '', ['a', 'b'] } ; assert_failed ;
+}
+
+sub test_assert_is_array {
+    eval { assert_is_array ['a', 'b'] } ; assert_passed ;
+    eval { assert_is_array {'a', 'b'} } ; assert_failed ;
+    eval { assert_is_array  'a'       } ; assert_failed ;
+}
+    
+sub test_assert_is_hash {
+    eval { assert_is_hash {'a', 'b'} } ; assert_passed ;
+    eval { assert_is_hash ['a', 'b'] } ; assert_failed ;
+    eval { assert_is_hash  'a'       } ; assert_failed ;
+}
+    
+sub test_assert_size {
+    eval { assert_size 2, ['a', 'b'] } ; assert_passed ;
+    eval { assert_size 1, ['a']      } ; assert_passed ;
+    eval { assert_size 0, []         } ; assert_passed ;
+
+    eval { assert_size 2, {'a', 'b'} } ; assert_failed ;
+    eval { assert_size 1, 'a'        } ; assert_failed ;
+}
+    
+sub test_assert_keys {
+    eval { assert_keys ['a', 'b'], { a => 1, b => 2 } } ; assert_passed ;
+    eval { assert_keys ['b', 'a'], { a => 1, b => 2 } } ; assert_passed ;
+    eval { assert_keys ['a'     ], { a => 1, b => 2 } } ; assert_failed ;
+    eval { assert_keys ['a', 'b'], { a => 1         } } ; assert_failed ;
+
+    eval { assert_keys ['a'], ['a'] } ; assert_failed ;
+    eval { assert_keys  'a' , ['a'] } ; assert_failed ;
+    eval { assert_keys ['a'],  'a'  } ; assert_failed ;
+}
+
+sub test_assert_is_string {
+    eval { assert_is_string  'hello'  } ; assert_passed ;
+
+    eval { assert_is_string ['hello', 'world'] } ; assert_failed ;
+    eval { assert_is_string {'hello', 'world'} } ; assert_failed ;
+}
+    
+
+package foo ; sub foo_1 { } sub foo_2 { } sub foo_3 { }
+package bar ; sub bar_1 { } sub bar_2 { } sub bar_3 { }
+package Test::Extreme;
+
+sub test_list_subs {
+    assert_equals [ 'foo_1', 'foo_2', 'foo_3' ], Test::Extreme::_list_subs 'main::foo::';
+    assert_equals [ 'foo_1', 'foo_2', 'foo_3' ], Test::Extreme::_list_subs 'foo::';
+    assert_equals [ 'bar_1', 'bar_2', 'bar_3' ], Test::Extreme::_list_subs 'bar::';
+}
+
+sub test_list_packages()
+{
+    my $packages = Test::Extreme::_list_packages 'main::';
+    assert_subset ['foo::', 'bar::'], $packages;
+    assert_none grep { ! /::$/ } @$packages;
+}
+
+package foo_test ; sub test_1 { } sub test_2 { } sub test_3 { }
+package Test::Extreme;
+
+sub test_list_tests() {
+    my $list = Test::Extreme::_list_tests 'foo_test::';
+    my $expected = [qw( foo_test::test_1  foo_test::test_2  foo_test::test_3 )];
+    assert_equals $expected, $list;
+}
+
+sub this_will_pass { assert_true 1 }
+sub this_will_fail { assert_true 0 }
+
+sub test_execute_tests {
+    my $all_tests = ['Test::Extreme::this_will_pass', 'Test::Extreme::this_will_fail'];
+    my $failure_messages = { };
+    Test::Extreme::_execute_tests $all_tests, $failure_messages, 0;
+    assert_keys ['Test::Extreme::this_will_fail'], $failure_messages;
+}
+
+run_tests_as_script 'Test::Extreme' if $0 =~ /Extreme.pm$/;
+
+#-----------------------------------------------------------------
+# TESTS END
+#-----------------------------------------------------------------
 
 1;
 
@@ -202,44 +384,42 @@ __END__
 
 =head1 SYNOPSIS
 
-    # In your code module ModuleOne.pm
+    # In ModuleOne.pm combine unit tests with code
 
-    sub foo { return 23 };
-    sub bar { return 42 };
-
-    # In your test module ModuleOneTest.pm
-
+    package ModuleOne;
     use Test::Extreme;
-
+    sub foo { return 23 };
     sub test_foo { assert_equals foo, 23 }    
-    sub test_bar { assert_equals bar, 42 }    
 
-    # To run these tests on the command line type
+    # at the end of the module 
 
-    perl -MModuleOneTest -e run_tests
+    run_tests 'ModuleOne' if $0 =~ /ModuleOne\.pm$/;
 
-    # If you have tests in several modules (say in
-    # ModuleOneTest.pm, ModuleTwoTest.pm and ModuleThreeTest.pm,
-    # create AllTests.pm containing precisely the following:
+    # To run the tests in this module on the command line type
 
-    use ModuleOneTest;
-    use ModuleTwoTest;
-    use ModuleThreeTest;
+    perl ModuleOne.pm
 
-    1;
+    # If you have tests in several modules (say in ModuleOne.pm,
+    # ModuleTwo.pm and ModuleThree.pm, create test.pl containing
+    # precisely the following:
 
-    # To run all of these tests on the command line type
+    use ModuleOne;
+    use ModuleTwo;
+    use ModuleThree;
 
-    perl -MAllTests -e run_tests
+    run_tests 'ModuleOne', 'ModuleTwo', 'ModuleThree', 
 
-    # If you have tests in different namespaces you can run them
-    # by typing (for example)
+    # Then run these tests on the command line with
 
-    perl -MAllTests -e 'run_tests "namespace1", "namespace2"'
+    perl test.pl
 
+    # If you prefer to get Perl's classic "ok/not ok" output use
+    # replace run_tests with run_tests_as_script in all of the
+    # above
 
     # Also take a look at Test/Extreme.pm which includes its own
     # unit tests for how to instrument a module with unit tests
+
 
 =head1 DESCRIPTION
 
@@ -284,28 +464,40 @@ __END__
     assert_size N, $list - the arrayref contains N elements
     assert_keys ['k1', 'k2'], $hash 
                          - $hash contains k1, k2 as keys
+
+    run_tests_as_script  - run all tests in package main and emit
+                           Perl's classic "ok/not ok" style output
+
+    run_tests_as_script NS1, NS2, ...
+                         - run all tests in package main, NS1,
+                           NS2, and so on and emit Perl's classic 
+                           "ok/not ok" style output
+
     run_tests            - run all tests in package main
+
     run_tests NS1, NS2, ...
                          - run all tests in package main, NS1,
                            NS2, and so on
 
     For an example on how to use these assert take a look at
-    Test/ExtremeTest.pm which shows different ways of using these
-    asserts.
-
-    Currently this requires that all your tests live in the
-    main:: namespace. If you are not sure what that means things
-    will probably just work seamlessly.
+    Test/Extreme.pm which includes it own unit tests and
+    illustrates different ways of using these asserts.
 
     The function run_tests finds all functions that start with
     the word test (preceded by zero or more underscores) and runs
-    them one at a time.
+    them one at a time. It looks in the 'main' namespace by
+    default and also looks in any namespaces passed to it as
+    arguments.
 
     Running the tests generates a status line (a "." for every
     successful test run, or an "F" for any failed test run), a
     summary result line ("OK" or "FAILURES!!!") and zero or more
     lines containing detailed error messages for any failed
-    tests.
+    tests. 
+
+    To get Perl's classic "ok/not ok" style output (which is
+    useful for writing test scripts) use run_tests_as_script
+    instead of run_tests.
 
 =head1 AUTHOR
 
