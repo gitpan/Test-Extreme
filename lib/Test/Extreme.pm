@@ -3,9 +3,12 @@ package Test::Extreme;
 use strict;
 use Carp;
 
-# export
 use vars qw($VERSION @ISA @EXPORT);
+
+$VERSION = '0.10';
+ 
 require Exporter;
+
 @ISA = qw(Exporter);
 @EXPORT = qw(
     assert
@@ -27,8 +30,6 @@ require Exporter;
     run_tests
 );
 
-$VERSION = '0.01';
- 
 sub assert($)       { confess "Assertion failed.\n$@" if !$_[0] ; undef $@ }
 sub assert_true($)  { assert $_[0]    }
 sub assert_false($) { assert ! $_[0]  }
