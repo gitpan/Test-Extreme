@@ -5,7 +5,7 @@ use Carp;
 
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '0.10';
+$VERSION = '0.11';
  
 require Exporter;
 
