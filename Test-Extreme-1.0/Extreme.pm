@@ -5,7 +5,7 @@ use Carp;
 
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '0.12';
+$VERSION = '1.0';
  
 require Exporter;
 
@@ -31,7 +31,11 @@ require Exporter;
     run_tests_as_script
 );
 
-sub assert($)       { confess "Assertion failed.\n$@" if !$_[0] ; undef $@ }
+sub assert($) {
+    if ($_[0]) { return; }
+    if (defined($@)) { confess "Assertion failed.\n$@"; undef $@; } 
+    else             { confess "Assertion failed.\n"; }
+}
 sub assert_true($)  { assert $_[0]    }
 sub assert_false($) { assert ! $_[0]  }
 sub assert_passed() { assert_false $@ }
@@ -124,10 +128,14 @@ sub _list_symbols {
 
     my $symbols = [];
     foreach $symbol (keys %pkg_keys) {
-        my $is_word = ($symbol =~ /^[\:\w]+$/s);
-        next if ! $is_word;
+        next if $symbol !~ /^[\:\w]+$/s;    # Skip if not-word
         my $symbol_path = $prefix . $pkg . $symbol ;
-        push @$symbols, $symbol if eval qq[ defined($symbol_path) ];
+        # Need this because Perl 5.12 deprecates defined on hash
+        if ($prefix eq '%') {
+            push @$symbols, $symbol if eval qq[!!($symbol_path)];
+        } else {
+            push @$symbols, $symbol if eval qq[ defined($symbol_path) ];
+        }
     }
     @$symbols = sort @$symbols;
     return $symbols;
@@ -380,7 +388,7 @@ __END__
 
 =head1 NAME
 
-    Test::Extreme - A perlish unit testing framework
+    Test::Extreme - A Perlish unit testing framework
 
 =head1 SYNOPSIS
 
@@ -423,26 +431,24 @@ __END__
 
 =head1 DESCRIPTION
 
-    Test::Extreme is a perlish port of the xUnit testing
-    framework. It is in the spirit of JUnit, the unit testing
-    framework for Java, by Kent Beck and Erich Gamma. Instead of
-    porting the implementation of JUnit we have ported its spirit
-    to Perl.
+Test::Extreme is a Perlish port of the xUnit testing framework. It is
+in the spirit of JUnit, the unit testing framework for Java, by Kent
+Beck and Erich Gamma. Instead of porting the implementation of JUnit
+we have ported its spirit to Perl.
 
-    The target market for this module is perlish people
-    everywhere who value laziness above all else.
+The target market for this module is Perlish people everywhere who
+value laziness above all else.
 
-    Test::Extreme is especially written so that it can be easily
-    and concisely used from Perl programs without turning them
-    into Java and without inducing object-oriented nightmares in
-    innocent Perl programmers. It has a shallow learning curve.
-    The goal is to adopt the unit testing idea minus the OO
-    cruft, and to make the world a better place by promoting the
-    virtues of laziness, impatience and hubris.
+Test::Extreme is especially written so that it can be easily and
+concisely used from Perl programs without turning them into Java and
+without inducing object-oriented nightmares in innocent Perl
+programmers. It has a shallow learning curve. The goal is to adopt the
+unit testing idea minus the OO cruft, and to make the world a better
+place by promoting the virtues of laziness, impatience and hubris.
 
-    You test a given unit (a script, a module, whatever) by using
-    Test::Extreme, which exports the following routines into your
-    namespace:
+You test a given unit (a script, a module, whatever) by using
+Test::Extreme, which exports the following routines into your
+namespace:
 
     assert $x            - $x is true
     assert_true $x       - $x is true
@@ -479,37 +485,34 @@ __END__
                          - run all tests in package main, NS1,
                            NS2, and so on
 
-    For an example on how to use these assert take a look at
-    Test/Extreme.pm which includes it own unit tests and
-    illustrates different ways of using these asserts.
+For an example on how to use these assert take a look at
+Test/Extreme.pm which includes it own unit tests and illustrates
+different ways of using these asserts.
 
-    The function run_tests finds all functions that start with
-    the word test (preceded by zero or more underscores) and runs
-    them one at a time. It looks in the 'main' namespace by
-    default and also looks in any namespaces passed to it as
-    arguments.
+The function run_tests finds all functions that start with the word
+test (preceded by zero or more underscores) and runs them one at a
+time. It looks in the 'main' namespace by default and also looks in
+any namespaces passed to it as arguments.
 
-    Running the tests generates a status line (a "." for every
-    successful test run, or an "F" for any failed test run), a
-    summary result line ("OK" or "FAILURES!!!") and zero or more
-    lines containing detailed error messages for any failed
-    tests. 
+Running the tests generates a status line (a "." for every successful
+test run, or an "F" for any failed test run), a summary result line
+("OK" or "FAILURES!!!") and zero or more lines containing detailed
+error messages for any failed tests. 
 
-    To get Perl's classic "ok/not ok" style output (which is
-    useful for writing test scripts) use run_tests_as_script
-    instead of run_tests.
+To get Perl's classic "ok/not ok" style output (which is useful for
+writing test scripts) use run_tests_as_script instead of run_tests.
 
 =head1 AUTHOR
 
-    Copyright (c) 2002 Asim Jalis, <asimjalis@acm.org>.
+Asim Jalis E<lt>asimjalis@gmail.comE<gt>.
 
-    All rights reserved. This program is free software; you can
-    redistribute it and/or modify it under the same terms as Perl
-    itself.
+=head1 COPYRIGHT
 
-=head1 SEE ALSO
+Copyright 2002-2012 by Asim Jalis E<lt>asimjalis@gmail.comE<gt>.
 
-    - Test::Unit
-    - Test::SimpleUnit
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+See F<http://www.perl.com/perl/misc/Artistic.html>.
 
 =cut
