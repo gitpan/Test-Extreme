@@ -1,16 +1,15 @@
 package Test::Extreme;
 
+use 5.012004;
 use strict;
+use warnings;
+
 use Carp;
 
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '1.0';
- 
 require Exporter;
 
-@ISA = qw(Exporter);
-@EXPORT = qw(
+our @ISA = qw(Exporter);
+our @EXPORT = qw(
     assert
     assert_true
     assert_false
@@ -31,11 +30,15 @@ require Exporter;
     run_tests_as_script
 );
 
+our $VERSION = '1.01';
+
+
 sub assert($) {
     if ($_[0]) { return; }
     if (defined($@)) { confess "Assertion failed.\n$@"; undef $@; } 
     else             { confess "Assertion failed.\n"; }
 }
+
 sub assert_true($)  { assert $_[0]    }
 sub assert_false($) { assert ! $_[0]  }
 sub assert_passed() { assert_false $@ }
@@ -383,51 +386,50 @@ run_tests_as_script 'Test::Extreme' if $0 =~ /Extreme.pm$/;
 #-----------------------------------------------------------------
 
 1;
-
 __END__
+# Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
 
-    Test::Extreme - A Perlish unit testing framework
+Test::Extreme - A Perlish unit testing framework
 
 =head1 SYNOPSIS
 
-    # In ModuleOne.pm combine unit tests with code
+  # In ModuleOne.pm combine unit tests with code
 
-    package ModuleOne;
-    use Test::Extreme;
-    sub foo { return 23 };
-    sub test_foo { assert_equals foo, 23 }    
+  package ModuleOne;
+  use Test::Extreme;
+  sub foo { return 23 };
+  sub test_foo { assert_equals foo, 23 }    
 
-    # at the end of the module 
+  # at the end of the module 
 
-    run_tests 'ModuleOne' if $0 =~ /ModuleOne\.pm$/;
+  run_tests 'ModuleOne' if $0 =~ /ModuleOne\.pm$/;
 
-    # To run the tests in this module on the command line type
+  # To run the tests in this module on the command line type
 
-    perl ModuleOne.pm
+  perl ModuleOne.pm
 
-    # If you have tests in several modules (say in ModuleOne.pm,
-    # ModuleTwo.pm and ModuleThree.pm, create test.pl containing
-    # precisely the following:
+  # If you have tests in several modules (say in ModuleOne.pm,
+  # ModuleTwo.pm and ModuleThree.pm, create test.pl containing
+  # precisely the following:
 
-    use ModuleOne;
-    use ModuleTwo;
-    use ModuleThree;
+  use ModuleOne;
+  use ModuleTwo;
+  use ModuleThree;
 
-    run_tests 'ModuleOne', 'ModuleTwo', 'ModuleThree', 
+  run_tests 'ModuleOne', 'ModuleTwo', 'ModuleThree', 
 
-    # Then run these tests on the command line with
+  # Then run these tests on the command line with
 
-    perl test.pl
+  perl test.pl
 
-    # If you prefer to get Perl's classic "ok/not ok" output use
-    # replace run_tests with run_tests_as_script in all of the
-    # above
+  # If you prefer to get Perl's classic "ok/not ok" output use
+  # replace run_tests with run_tests_as_script in all of the
+  # above
 
-    # Also take a look at Test/Extreme.pm which includes its own
-    # unit tests for how to instrument a module with unit tests
-
+  # Also take a look at Test/Extreme.pm which includes its own
+  # unit tests for how to instrument a module with unit tests
 
 =head1 DESCRIPTION
 
@@ -446,44 +448,46 @@ programmers. It has a shallow learning curve. The goal is to adopt the
 unit testing idea minus the OO cruft, and to make the world a better
 place by promoting the virtues of laziness, impatience and hubris.
 
+=head2 EXPORT
+
 You test a given unit (a script, a module, whatever) by using
 Test::Extreme, which exports the following routines into your
 namespace:
 
-    assert $x            - $x is true
-    assert_true $x       - $x is true
-    assert_false $x      - $x is not true
-    assert_passed        - the last eval did not die ($@ eq "")
-    assert_failed        - the last eval caused a die ($@ ne "")
-    assert_some $x       - $x is true
-    assert_none          - $x is false
-    assert_equals $x, $y - recursively tests arrayrefs, hashrefs
-                           and strings to ensure they have the same 
-                           contents
-    assert_contains $string, $list 
-                         - $list contains $string assert_subset 
-                           $element_list, $list - $element_list is 
-                           a subset of $list (both are arrayrefs)
-    assert_is_array $x   - $x is an arrayref
-    assert_is_hash $x    - $x is a hashref
-    assert_is_string $x  - $x is a scalar
-    assert_size N, $list - the arrayref contains N elements
-    assert_keys ['k1', 'k2'], $hash 
-                         - $hash contains k1, k2 as keys
+  assert $x            - $x is true
+  assert_true $x       - $x is true
+  assert_false $x      - $x is not true
+  assert_passed        - the last eval did not die ($@ eq "")
+  assert_failed        - the last eval caused a die ($@ ne "")
+  assert_some $x       - $x is true
+  assert_none          - $x is false
+  assert_equals $x, $y - recursively tests arrayrefs, hashrefs
+                         and strings to ensure they have the same 
+                         contents
+  assert_contains $string, $list 
+                       - $list contains $string assert_subset 
+                         $element_list, $list - $element_list is 
+                         a subset of $list (both are arrayrefs)
+  assert_is_array $x   - $x is an arrayref
+  assert_is_hash $x    - $x is a hashref
+  assert_is_string $x  - $x is a scalar
+  assert_size N, $list - the arrayref contains N elements
+  assert_keys ['k1', 'k2'], $hash 
+                       - $hash contains k1, k2 as keys
 
-    run_tests_as_script  - run all tests in package main and emit
-                           Perl's classic "ok/not ok" style output
+  run_tests_as_script  - run all tests in package main and emit
+                         Perl's classic "ok/not ok" style output
 
-    run_tests_as_script NS1, NS2, ...
-                         - run all tests in package main, NS1,
-                           NS2, and so on and emit Perl's classic 
-                           "ok/not ok" style output
+  run_tests_as_script NS1, NS2, ...
+                       - run all tests in package main, NS1,
+                         NS2, and so on and emit Perl's classic 
+                         "ok/not ok" style output
 
-    run_tests            - run all tests in package main
+  run_tests            - run all tests in package main
 
-    run_tests NS1, NS2, ...
-                         - run all tests in package main, NS1,
-                           NS2, and so on
+  run_tests NS1, NS2, ...
+                       - run all tests in package main, NS1,
+                         NS2, and so on
 
 For an example on how to use these assert take a look at
 Test/Extreme.pm which includes it own unit tests and illustrates
@@ -502,16 +506,21 @@ error messages for any failed tests.
 To get Perl's classic "ok/not ok" style output (which is useful for
 writing test scripts) use run_tests_as_script instead of run_tests.
 
+=head1 SEE ALSO
+
+See also “JUnit Cookbook” by Kent Beck, Erich Gamma F<http://junit.sourceforge.net/doc/cookbook/cookbook.htm> for examples of how to write small unit tests around your code, and for the philosophy of test-driven development.
+
 =head1 AUTHOR
 
-Asim Jalis E<lt>asimjalis@gmail.comE<gt>.
+Asim Jalis E<lt>asimjalis@gmail.comE<gt>. Special thanks to F<http://metaprose.com> for giving me the free time to work on this.
 
-=head1 COPYRIGHT
+=head1 COPYRIGHT AND LICENSE
 
-Copyright 2002-2012 by Asim Jalis E<lt>asimjalis@gmail.comE<gt>.
+Copyright (C) 2002-2012 by Asim Jalis E<lt>asimjalis@gmail.comE<gt>.
 
-This program is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself.
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.12.4 or,
+at your option, any later version of Perl 5 you may have available.
 
 See F<http://www.perl.com/perl/misc/Artistic.html>.
 
